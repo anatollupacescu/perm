@@ -5,9 +5,8 @@ type Transformation[X any] interface {
 }
 
 type Collector[X any, T Transformation[X]] struct {
-	scount  int // want solution count
-	skipped int
-	halt    bool
+	scount int // want solution count
+	halt   bool
 
 	solutions  []Solution[T]
 	invariants []invariant[X]
@@ -44,21 +43,14 @@ type Solution[T any] struct {
 	Steps []T
 }
 
-func (e *Collector[X, T]) Collect(ctx *X, acc []T, current T) (doSkip, done bool) {
+func (e *Collector[X, T]) Collect(ctx *X, acc []T, current T) (doSkip bool) {
 	if e.halt {
-		return false, true
+		return true
 	}
-
-	defer func() {
-		if doSkip {
-			e.skipped++
-			return
-		}
-	}()
 
 	for _, skipRule := range e.skipRules {
 		if skipRule(ctx, acc, current) { // match
-			return true, false
+			return true
 		}
 	}
 
@@ -75,11 +67,10 @@ func (e *Collector[X, T]) Collect(ctx *X, acc []T, current T) (doSkip, done bool
 			e.solutions = append(e.solutions, s)
 			doSkip = true
 			if len(e.solutions) >= e.scount {
-				done = true
 				e.halt = true
 			}
 		}
 	}
 
-	return
+	return e.halt
 }

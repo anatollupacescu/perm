@@ -5,7 +5,7 @@ type node[X, T any] struct {
 	refs []*node[X, T]
 }
 
-type collector[X, T any] func(ctx *X, acc []T, current T) (doSkip, done bool)
+type collector[X, T any] func(ctx *X, acc []T, current T) bool
 
 func New[X, T any](in []T) *node[X, T] {
 	var refs = make([]*node[X, T], 0, len(in))
@@ -33,11 +33,7 @@ func (n *node[X, T]) perm(ctx X, collect collector[X, T], acc []T, size int) {
 	}
 	for _, v := range n.refs {
 		ctx := ctx
-		skip, halt := collect(&ctx, acc, v.v)
-		if halt {
-			break
-		}
-		if skip {
+		if skip := collect(&ctx, acc, v.v); skip {
 			continue
 		}
 		if !done {

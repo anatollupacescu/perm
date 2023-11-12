@@ -27,19 +27,19 @@ func TestFindStepSequence(t *testing.T) {
 		return ctx.jug_5 == 4 // solution: we've got 4 liters in the 5 liter jug
 	})
 
-	e.WantSolutions(7)
+	want := 7
+	e.WantSolutions(want)
 
 	perm.New[context, act](input).Perm(e.Collect, 8)
 
 	solutions := e.Solutions()
 
-	if len(solutions) != 6 {
-		t.Fatalf("want %d solutions, got %d", 6, len(solutions))
+	if len(solutions) != want {
+		t.Fatalf("want %d solutions, got %d", want, len(solutions))
 	}
 
 	slices.SortFunc(solutions, func(a, b perm.Solution[act]) int {
 		return len(a.Steps) - len(b.Steps)
 	})
 
-	t.Log(solutions[0])
 }
