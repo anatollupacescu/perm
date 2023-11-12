@@ -1,6 +1,7 @@
 package diehard
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/anatollupacescu/perm"
@@ -35,4 +36,10 @@ func TestFindStepSequence(t *testing.T) {
 	if len(solutions) != 6 {
 		t.Fatalf("want %d solutions, got %d", 6, len(solutions))
 	}
+
+	slices.SortFunc(solutions, func(a, b perm.Solution[act]) int {
+		return len(a.Steps) - len(b.Steps)
+	})
+
+	t.Log(solutions[0])
 }
