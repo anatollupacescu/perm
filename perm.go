@@ -33,9 +33,12 @@ func (n *node[X, T]) perm(ctx X, collect collector[X, T], acc []T, size int) {
 	}
 	for _, v := range n.refs {
 		ctx := ctx
-		if skip := collect(&ctx, acc, v.v); skip {
+		skip := collect(&ctx, acc, v.v)
+
+		if skip {
 			continue
 		}
+
 		if !done {
 			v.perm(ctx, collect, append(acc, v.v), size)
 		}

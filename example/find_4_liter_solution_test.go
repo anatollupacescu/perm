@@ -27,7 +27,7 @@ func TestFindStepSequence(t *testing.T) {
 		return ctx.jug_5 == 4 // solution: we've got 4 liters in the 5 liter jug
 	})
 
-	want := 7
+	want := 6
 	e.WantSolutions(want)
 
 	perm.New[context, act](input).Perm(e.Collect, 8)
@@ -42,4 +42,7 @@ func TestFindStepSequence(t *testing.T) {
 		return len(a.Steps) - len(b.Steps)
 	})
 
+	for _, s := range solutions[0].Steps {
+		t.Log(s.name)
+	}
 }

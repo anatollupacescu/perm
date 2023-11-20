@@ -72,5 +72,5 @@ func (e *Collector[X, T]) Collect(ctx *X, acc []T, current T) (doSkip bool) {
 		}
 	}
 
-	return e.halt
+	return
 }
