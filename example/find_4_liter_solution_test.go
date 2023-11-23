@@ -18,7 +18,9 @@ func TestFindStepSequence(t *testing.T) {
 		act{name: "5-to-3", cb: transfer_5_to_3})
 
 	t.Run("one solution within 6 steps", func(t *testing.T) {
-		e := c.New[context, act](6)
+		e := c.New[context, act](6, func(ctx *context, a act) {
+			a.cb(ctx)
+		})
 
 		e.AddSkipRule(initialStepIsFillingUp, // no point in starting with anything else
 			emptyAnEmptyJug, fillUpAfullJug, transferFromEmpty,
@@ -48,7 +50,9 @@ func TestFindStepSequence(t *testing.T) {
 		// }
 	})
 	t.Run("six solutions within 8 steps", func(t *testing.T) {
-		e := c.New[context, act](8)
+		e := c.New[context, act](8, func(ctx *context, a act) {
+			a.cb(ctx)
+		})
 
 		e.AddSkipRule(initialStepIsFillingUp, // no point in starting with anything else
 			emptyAnEmptyJug, fillUpAfullJug, transferFromEmpty,

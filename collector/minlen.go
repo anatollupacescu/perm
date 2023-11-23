@@ -1,10 +1,10 @@
 package perm
 
-type MinLenCollector[X any, T Transformation[X]] struct {
+type MinLenCollector[X, T any] struct {
 	*Collector[X, T]
 }
 
-func WithMinLen[X any, T Transformation[X]](c *Collector[X, T]) *MinLenCollector[X, T] {
+func WithMinLen[X, T any](c *Collector[X, T]) *MinLenCollector[X, T] {
 	return &MinLenCollector[X, T]{
 		Collector: c,
 	}

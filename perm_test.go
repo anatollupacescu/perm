@@ -7,17 +7,12 @@ import (
 	c "github.com/anatollupacescu/perm/collector"
 )
 
-type ctx struct{}
-type s string
-
-func (s) Apply(*ctx) {}
-
 func TestMoreValsThanSize(t *testing.T) {
-	tree := New[ctx, s]([]s{"x", "y", "z"})
+	tree := New[any, string]([]string{"x", "y", "z"})
 
-	ml := c.WithMinLen[ctx, s](c.New[ctx, s](2))
+	ml := c.WithMinLen[any, string](c.New[any, string](2))
 
-	ml.AddSkipRule(func(ctx *ctx, acc []s, current s) bool {
+	ml.AddSkipRule(func(ctx *any, acc []string, current string) bool {
 		return false
 	})
 
@@ -55,12 +50,12 @@ func TestPermMoreValsThanSize(t *testing.T) {
 	})
 
 	t.Run("collector", func(t *testing.T) {
-		ml := c.WithMinLen(c.New[ctx, s](2))
+		ml := c.WithMinLen(c.New[any, string](2))
 
-		tree := New[ctx, s]([]s{"a", "b", "c", "d"})
+		tree := New[any, string]([]string{"a", "b", "c", "d"})
 
-		var res [][]s
-		ml.AddSkipRule(func(ctx *ctx, acc []s, current s) bool {
+		var res [][]string
+		ml.AddSkipRule(func(ctx *any, acc []string, current string) bool {
 			acc = append(acc, current)
 			res = append(res, acc)
 			return false
@@ -72,11 +67,7 @@ func TestPermMoreValsThanSize(t *testing.T) {
 		for _, v := range want {
 			c := res[index]
 			index++
-			var vs []s
-			for _, i := range v {
-				vs = append(vs, s(i))
-			}
-			if !slices.Equal(c, vs) {
+			if !slices.Equal(c, v) {
 				t.Fatalf("\nwant: %v\ngot:  %v", v, c)
 			}
 		}
@@ -121,12 +112,12 @@ func TestPermFewerValsThanSize(t *testing.T) {
 	})
 
 	t.Run("collector", func(t *testing.T) {
-		ml := c.WithMinLen(c.New[ctx, s](3))
+		ml := c.WithMinLen(c.New[any, string](3))
 
-		tree := New[ctx, s]([]s{"1", "0"})
+		tree := New[any, string]([]string{"1", "0"})
 
-		var res [][]s
-		ml.AddSkipRule(func(ctx *ctx, acc []s, current s) bool {
+		var res [][]string
+		ml.AddSkipRule(func(ctx *any, acc []string, current string) bool {
 			acc = append(acc, current)
 			res = append(res, acc)
 			return false
@@ -138,11 +129,7 @@ func TestPermFewerValsThanSize(t *testing.T) {
 		for _, v := range want {
 			c := res[index]
 			index++
-			var vs []s
-			for _, i := range v {
-				vs = append(vs, s(i))
-			}
-			if !slices.Equal(c, vs) {
+			if !slices.Equal(c, v) {
 				t.Fatalf("\nwant: %v\ngot:  %v", v, c)
 			}
 		}
@@ -213,13 +200,12 @@ func TestPerm(t *testing.T) {
 	})
 
 	t.Run("collector", func(t *testing.T) {
-		ml := c.WithMinLen(c.New[ctx, s](3))
+		ml := c.WithMinLen(c.New[any, string](3))
 
-		tree := New[ctx, s]([]s{"a", "b", "c"})
+		tree := New[any, string]([]string{"a", "b", "c"})
 
-		var res [][]s
-
-		ml.AddSkipRule(func(ctx *ctx, acc []s, current s) bool {
+		var res [][]string
+		ml.AddSkipRule(func(ctx *any, acc []string, current string) bool {
 			acc = append(acc, current)
 			res = append(res, acc)
 			return false
@@ -235,11 +221,7 @@ func TestPerm(t *testing.T) {
 		for _, v := range want {
 			c := res[index]
 			index++
-			var vs []s
-			for _, i := range v {
-				vs = append(vs, s(i))
-			}
-			if !slices.Equal(c, vs) {
+			if !slices.Equal(c, v) {
 				t.Fatalf("\nwant: %v\ngot:  %v", v, c)
 			}
 		}

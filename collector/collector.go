@@ -1,10 +1,6 @@
 package perm
 
-type Transformation[X any] interface {
-	Apply(*X)
-}
-
-type Collector[X any, T Transformation[X]] struct {
+type Collector[X, T any] struct {
 	scount int // want solution count
 	halt   bool
 	size   int
@@ -13,10 +9,16 @@ type Collector[X any, T Transformation[X]] struct {
 	invariants []invariant[X]
 
 	skipRules []func(ctx *X, acc []T, current T) bool
+
+	apply func(*X, T)
 }
 
-func New[X any, T Transformation[X]](size int) *Collector[X, T] {
-	return &Collector[X, T]{size: size - 1}
+func New[X any, T any](size int, apply ...func(*X, T)) *Collector[X, T] {
+	c := &Collector[X, T]{size: size - 1, apply: func(x *X, t T) {}}
+	if len(apply) > 0 {
+		c.apply = apply[0]
+	}
+	return c
 }
 
 func (c *Collector[X, T]) AddSkipRule(f ...func(ctx *X, acc []T, current T) bool) {
@@ -59,7 +61,7 @@ func (e *Collector[X, T]) Collect(ctx *X, acc []T, current T) (doSkip, done bool
 		}
 	}
 
-	current.Apply(ctx)
+	e.apply(ctx, current)
 
 	for _, inv := range e.invariants {
 		if inv.check(ctx) {
