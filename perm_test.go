@@ -3,38 +3,87 @@ package perm
 import (
 	"slices"
 	"testing"
+
+	c "github.com/anatollupacescu/perm/collector"
 )
 
-func TestPermMore(t *testing.T) {
+type ctx struct{}
+type s string
+
+func (s) Apply(*ctx) {}
+
+func TestMoreValsThanSize(t *testing.T) {
+	tree := New[ctx, s]([]s{"x", "y", "z"})
+
+	ml := c.WithMinLen[ctx, s](c.New[ctx, s](2))
+
+	ml.AddSkipRule(func(ctx *ctx, acc []s, current s) bool {
+		return false
+	})
+
+	tree.Perm(ml.Collect)
+}
+
+func TestPermMoreValsThanSize(t *testing.T) {
 	want := [][]string{
 		{"a", "a"}, {"a", "b"}, {"a", "c"}, {"a", "d"}, {"b", "a"}, {"b", "b"}, {"b", "c"}, {"b", "d"},
 		{"c", "a"}, {"c", "b"}, {"c", "c"}, {"c", "d"}, {"d", "a"}, {"d", "b"}, {"d", "c"}, {"d", "d"},
 	}
 
-	tree := New[any, string]([]string{"a", "b", "c", "d"})
+	t.Run("sink", func(t *testing.T) {
+		tree := New[any, string]([]string{"a", "b", "c", "d"})
 
-	var res [][]string
-	sink := func(in []string) {
-		res = append(res, in)
-	}
-
-	perm(tree, nil, sink, 2)
-
-	if len(res) != len(want) {
-		t.Fatalf("want result size: %d, got %d", len(want), len(res))
-	}
-
-	var index int
-	for _, v := range want {
-		c := res[index]
-		index++
-		if !slices.Equal(c, v) {
-			t.Fatalf("\nwant: %v\ngot:  %v", v, c)
+		var res [][]string
+		sink := func(in []string) {
+			res = append(res, in)
 		}
-	}
+
+		perm(tree, nil, sink, 2)
+
+		if len(res) != len(want) {
+			t.Fatalf("want result size: %d, got %d", len(want), len(res))
+		}
+
+		var index int
+		for _, v := range want {
+			c := res[index]
+			index++
+			if !slices.Equal(c, v) {
+				t.Fatalf("\nwant: %v\ngot:  %v", v, c)
+			}
+		}
+	})
+
+	t.Run("collector", func(t *testing.T) {
+		ml := c.WithMinLen(c.New[ctx, s](2))
+
+		tree := New[ctx, s]([]s{"a", "b", "c", "d"})
+
+		var res [][]s
+		ml.AddSkipRule(func(ctx *ctx, acc []s, current s) bool {
+			acc = append(acc, current)
+			res = append(res, acc)
+			return false
+		})
+
+		tree.Perm(ml.Collect)
+
+		var index int
+		for _, v := range want {
+			c := res[index]
+			index++
+			var vs []s
+			for _, i := range v {
+				vs = append(vs, s(i))
+			}
+			if !slices.Equal(c, vs) {
+				t.Fatalf("\nwant: %v\ngot:  %v", v, c)
+			}
+		}
+	})
 }
 
-func TestPermFewer(t *testing.T) {
+func TestPermFewerValsThanSize(t *testing.T) {
 	want := [][]string{
 		{"1", "1", "1"},
 		{"1", "1", "0"},
@@ -46,27 +95,58 @@ func TestPermFewer(t *testing.T) {
 		{"0", "0", "0"},
 	}
 
-	tree := New[any, string]([]string{"1", "0"})
+	t.Run("sink", func(t *testing.T) {
 
-	var res [][]string
-	sink := func(in []string) {
-		res = append(res, in)
-	}
+		tree := New[any, string]([]string{"1", "0"})
 
-	perm(tree, nil, sink, 3)
-
-	if len(res) != len(want) {
-		t.Fatalf("want result size: %d, got %d", len(want), len(res))
-	}
-
-	var index int
-	for _, v := range want {
-		c := res[index]
-		index++
-		if !slices.Equal(c, v) {
-			t.Fatalf("\nwant: %v\ngot:  %v", v, c)
+		var res [][]string
+		sink := func(in []string) {
+			res = append(res, in)
 		}
-	}
+
+		perm(tree, nil, sink, 3)
+
+		if len(res) != len(want) {
+			t.Fatalf("want result size: %d, got %d", len(want), len(res))
+		}
+
+		var index int
+		for _, v := range want {
+			c := res[index]
+			index++
+			if !slices.Equal(c, v) {
+				t.Fatalf("\nwant: %v\ngot:  %v", v, c)
+			}
+		}
+	})
+
+	t.Run("collector", func(t *testing.T) {
+		ml := c.WithMinLen(c.New[ctx, s](3))
+
+		tree := New[ctx, s]([]s{"1", "0"})
+
+		var res [][]s
+		ml.AddSkipRule(func(ctx *ctx, acc []s, current s) bool {
+			acc = append(acc, current)
+			res = append(res, acc)
+			return false
+		})
+
+		tree.Perm(ml.Collect)
+
+		var index int
+		for _, v := range want {
+			c := res[index]
+			index++
+			var vs []s
+			for _, i := range v {
+				vs = append(vs, s(i))
+			}
+			if !slices.Equal(c, vs) {
+				t.Fatalf("\nwant: %v\ngot:  %v", v, c)
+			}
+		}
+	})
 }
 
 func TestPerm(t *testing.T) {
@@ -108,25 +188,60 @@ func TestPerm(t *testing.T) {
 		{"c", "c", "c"},
 	}
 
-	tree := New[any, string]([]string{"a", "b", "c"})
+	t.Run("sinc", func(t *testing.T) {
+		tree := New[any, string]([]string{"a", "b", "c"})
 
-	var res [][]string
-	sink := func(in []string) {
-		res = append(res, in)
-	}
-
-	perm(tree, nil, sink, 3)
-
-	if len(res) != len(want) {
-		t.Fatalf("want result size: %d, got %d", len(want), len(res))
-	}
-
-	var index int
-	for _, v := range want {
-		c := res[index]
-		index++
-		if !slices.Equal(c, v) {
-			t.Fatalf("\nwant: %v\ngot:  %v", v, c)
+		var res [][]string
+		sink := func(in []string) {
+			res = append(res, in)
 		}
-	}
+
+		perm(tree, nil, sink, 3)
+
+		if len(res) != len(want) {
+			t.Fatalf("want result size: %d, got %d", len(want), len(res))
+		}
+
+		var index int
+		for _, v := range want {
+			c := res[index]
+			index++
+			if !slices.Equal(c, v) {
+				t.Fatalf("\nwant: %v\ngot:  %v", v, c)
+			}
+		}
+	})
+
+	t.Run("collector", func(t *testing.T) {
+		ml := c.WithMinLen(c.New[ctx, s](3))
+
+		tree := New[ctx, s]([]s{"a", "b", "c"})
+
+		var res [][]s
+
+		ml.AddSkipRule(func(ctx *ctx, acc []s, current s) bool {
+			acc = append(acc, current)
+			res = append(res, acc)
+			return false
+		})
+
+		tree.Perm(ml.Collect)
+
+		if len(res) != len(want) {
+			t.Fatalf("want result size: %d, got %d", len(want), len(res))
+		}
+
+		var index int
+		for _, v := range want {
+			c := res[index]
+			index++
+			var vs []s
+			for _, i := range v {
+				vs = append(vs, s(i))
+			}
+			if !slices.Equal(c, vs) {
+				t.Fatalf("\nwant: %v\ngot:  %v", v, c)
+			}
+		}
+	})
 }

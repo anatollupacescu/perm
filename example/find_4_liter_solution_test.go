@@ -1,10 +1,10 @@
 package diehard
 
 import (
-	"slices"
 	"testing"
 
 	"github.com/anatollupacescu/perm"
+	c "github.com/anatollupacescu/perm/collector"
 )
 
 func TestFindStepSequence(t *testing.T) {
@@ -17,32 +17,56 @@ func TestFindStepSequence(t *testing.T) {
 		act{name: "3-to-5", cb: transfer_3_to_5},
 		act{name: "5-to-3", cb: transfer_5_to_3})
 
-	e := new(perm.Collector[context, act])
+	t.Run("one solution within 6 steps", func(t *testing.T) {
+		e := c.New[context, act](6)
 
-	e.AddSkipRule(initialStepIsFillingUp, // no point in starting with anything else
-		emptyAnEmptyJug, fillUpAfullJug, transferFromEmpty,
-		transferToFull, repetitions, redundant)
+		e.AddSkipRule(initialStepIsFillingUp, // no point in starting with anything else
+			emptyAnEmptyJug, fillUpAfullJug, transferFromEmpty,
+			transferToFull, repetitions, redundant)
 
-	e.AddInvariant("match 4 liters", func(ctx *context) bool {
-		return ctx.jug_5 == 4 // solution: we've got 4 liters in the 5 liter jug
+		e.AddInvariant("match 4 liters", func(ctx *context) bool {
+			return ctx.jug_5 == 4 // solution: we've got 4 liters in the 5 liter jug
+		})
+
+		want := 1
+		e.WantSolutions(want)
+
+		perm.New[context, act](input).Perm(e.Collect)
+
+		solutions := e.Solutions()
+
+		if len(solutions) != want {
+			t.Fatalf("want %d solutions, got %d", want, len(solutions))
+		}
+
+		// slices.SortFunc(solutions, func(a, b c.Solution[act]) int {
+		// 	return len(a.Steps) - len(b.Steps)
+		// })
+
+		// for _, s := range solutions[0].Steps {
+		// 	t.Log(s.name)
+		// }
 	})
+	t.Run("six solutions within 8 steps", func(t *testing.T) {
+		e := c.New[context, act](8)
 
-	want := 6
-	e.WantSolutions(want)
+		e.AddSkipRule(initialStepIsFillingUp, // no point in starting with anything else
+			emptyAnEmptyJug, fillUpAfullJug, transferFromEmpty,
+			transferToFull, repetitions, redundant)
 
-	perm.New[context, act](input).Perm(e.Collect, 8)
+		e.AddInvariant("match 4 liters", func(ctx *context) bool {
+			return ctx.jug_5 == 4 // solution: we've got 4 liters in the 5 liter jug
+		})
 
-	solutions := e.Solutions()
+		want := 6
+		e.WantSolutions(want)
 
-	if len(solutions) != want {
-		t.Fatalf("want %d solutions, got %d", want, len(solutions))
-	}
+		perm.New[context, act](input).Perm(e.Collect)
 
-	slices.SortFunc(solutions, func(a, b perm.Solution[act]) int {
-		return len(a.Steps) - len(b.Steps)
+		solutions := e.Solutions()
+
+		if len(solutions) != want {
+			t.Fatalf("want %d solutions, got %d", want, len(solutions))
+		}
 	})
-
-	for _, s := range solutions[0].Steps {
-		t.Log(s.name)
-	}
 }
