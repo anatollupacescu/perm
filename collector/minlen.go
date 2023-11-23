@@ -1,19 +1,21 @@
-package perm
+package collector
 
 type MinLenCollector[X, T any] struct {
-	*Collector[X, T]
+	collector[X, T]
+	minSize int
 }
 
-func WithMinLen[X, T any](c *Collector[X, T]) *MinLenCollector[X, T] {
+func WithMinLen[X, T any](c collector[X, T], minSize int) *MinLenCollector[X, T] {
 	return &MinLenCollector[X, T]{
-		Collector: c,
+		collector: c,
+		minSize:   minSize - 1,
 	}
 }
 
 func (ml *MinLenCollector[X, T]) Collect(ctx *X, acc []T, current T) (doSkip, done bool) {
-	if len(acc) < ml.size {
+	if len(acc) < ml.minSize {
 		return false, false
 	}
 
-	return ml.Collector.Collect(ctx, acc, current)
+	return ml.collector.Collect(ctx, acc, current)
 }

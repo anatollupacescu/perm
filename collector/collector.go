@@ -1,4 +1,6 @@
-package perm
+package collector
+
+import "fmt"
 
 type Collector[X, T any] struct {
 	scount int // want solution count
@@ -7,22 +9,17 @@ type Collector[X, T any] struct {
 
 	solutions  []Solution[T]
 	invariants []invariant[X]
-
-	skipRules []func(ctx *X, acc []T, current T) bool
-
-	apply func(*X, T)
 }
 
-func New[X any, T any](size int, apply ...func(*X, T)) *Collector[X, T] {
-	c := &Collector[X, T]{size: size - 1, apply: func(x *X, t T) {}}
-	if len(apply) > 0 {
-		c.apply = apply[0]
+func New[X any, T any](size int, invs ...func(*X) bool) *Collector[X, T] {
+	c := &Collector[X, T]{size: size - 1}
+	for i, inv := range invs {
+		c.invariants = append(c.invariants, invariant[X]{
+			name:  fmt.Sprintf("main-%d", i),
+			check: inv,
+		})
 	}
 	return c
-}
-
-func (c *Collector[X, T]) AddSkipRule(f ...func(ctx *X, acc []T, current T) bool) {
-	c.skipRules = append(c.skipRules, f...)
 }
 
 func (c *Collector[X, T]) AddInvariant(name string, check func(*X) bool) {
@@ -55,14 +52,6 @@ func (e *Collector[X, T]) Collect(ctx *X, acc []T, current T) (doSkip, done bool
 		return false, true
 	}
 
-	for _, skipRule := range e.skipRules {
-		if skipRule(ctx, acc, current) { // match
-			return true, false
-		}
-	}
-
-	e.apply(ctx, current)
-
 	for _, inv := range e.invariants {
 		if inv.check(ctx) {
 			nacc := make([]T, len(acc))
@@ -80,7 +69,7 @@ func (e *Collector[X, T]) Collect(ctx *X, acc []T, current T) (doSkip, done bool
 		}
 	}
 
-	if len(acc) == e.size {
+	if len(acc) >= e.size {
 		return true, false
 	}
 

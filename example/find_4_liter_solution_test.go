@@ -17,23 +17,23 @@ func TestFindStepSequence(t *testing.T) {
 		act{name: "3-to-5", cb: transfer_3_to_5},
 		act{name: "5-to-3", cb: transfer_5_to_3})
 
-	t.Run("one solution within 6 steps", func(t *testing.T) {
-		e := c.New[context, act](6, func(ctx *context, a act) {
-			a.cb(ctx)
-		})
-
-		e.AddSkipRule(initialStepIsFillingUp, // no point in starting with anything else
-			emptyAnEmptyJug, fillUpAfullJug, transferFromEmpty,
-			transferToFull, repetitions, redundant)
-
-		e.AddInvariant("match 4 liters", func(ctx *context) bool {
+	t.Run("one solution with 6 steps", func(t *testing.T) {
+		e := c.New[context, act](6, func(ctx *context) bool {
 			return ctx.jug_5 == 4 // solution: we've got 4 liters in the 5 liter jug
 		})
+
+		ml := c.WithMinLen(e, 5)
+
+		ap := c.WithApply(ml, func(ctx *context, a act) { a.cb(ctx) })
+
+		sk := c.WithSkipRules(ap, initialStepIsFillingUp,
+			emptyAnEmptyJug, fillUpAfullJug, transferFromEmpty,
+			transferToFull, repetitions, redundant)
 
 		want := 1
 		e.WantSolutions(want)
 
-		perm.New[context, act](input).Perm(e.Collect)
+		perm.New[context, act](input).Perm(sk.Collect)
 
 		solutions := e.Solutions()
 
@@ -49,12 +49,17 @@ func TestFindStepSequence(t *testing.T) {
 		// 	t.Log(s.name)
 		// }
 	})
-	t.Run("six solutions within 8 steps", func(t *testing.T) {
-		e := c.New[context, act](8, func(ctx *context, a act) {
-			a.cb(ctx)
+
+	t.Run("six solutions with 8 steps", func(t *testing.T) {
+		e := c.New[context, act](8, func(ctx *context) bool {
+			return ctx.jug_5 == 4 // solution: we've got 4 liters in the 5 liter jug
 		})
 
-		e.AddSkipRule(initialStepIsFillingUp, // no point in starting with anything else
+		ml := c.WithMinLen(e, 6)
+
+		ap := c.WithApply(ml, func(ctx *context, a act) { a.cb(ctx) })
+
+		sk := c.WithSkipRules(ap, initialStepIsFillingUp, // no point in starting with anything else
 			emptyAnEmptyJug, fillUpAfullJug, transferFromEmpty,
 			transferToFull, repetitions, redundant)
 
@@ -65,7 +70,7 @@ func TestFindStepSequence(t *testing.T) {
 		want := 6
 		e.WantSolutions(want)
 
-		perm.New[context, act](input).Perm(e.Collect)
+		perm.New[context, act](input).Perm(sk.Collect)
 
 		solutions := e.Solutions()
 

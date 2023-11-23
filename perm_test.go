@@ -7,16 +7,20 @@ import (
 	c "github.com/anatollupacescu/perm/collector"
 )
 
-func TestMoreValsThanSize(t *testing.T) {
-	tree := New[any, string]([]string{"x", "y", "z"})
+func TestSkipRule(t *testing.T) {
+	cl := c.New[any, string](2)
 
-	ml := c.WithMinLen[any, string](c.New[any, string](2))
-
-	ml.AddSkipRule(func(ctx *any, acc []string, current string) bool {
-		return false
+	sk := c.WithSink(cl, func(acc []string) {
+		// t.Log(acc)
 	})
 
-	tree.Perm(ml.Collect)
+	ml := c.WithMinLen(sk, 2)
+
+	sr := c.WithSkipRules(ml, func(ctx *any, acc []string, current string) bool {
+		return len(acc) == 1 && current == "y"
+	})
+
+	New[any, string]([]string{"x", "y", "z"}).Perm(sr.Collect)
 }
 
 func TestPermMoreValsThanSize(t *testing.T) {
@@ -50,18 +54,16 @@ func TestPermMoreValsThanSize(t *testing.T) {
 	})
 
 	t.Run("collector", func(t *testing.T) {
-		ml := c.WithMinLen(c.New[any, string](2))
-
-		tree := New[any, string]([]string{"a", "b", "c", "d"})
+		cl := c.New[any, string](2)
 
 		var res [][]string
-		ml.AddSkipRule(func(ctx *any, acc []string, current string) bool {
-			acc = append(acc, current)
+		sk := c.WithSink(cl, func(acc []string) {
 			res = append(res, acc)
-			return false
 		})
 
-		tree.Perm(ml.Collect)
+		ml := c.WithMinLen(sk, 2)
+
+		New[any, string]([]string{"a", "b", "c", "d"}).Perm(ml.Collect)
 
 		var index int
 		for _, v := range want {
@@ -87,7 +89,6 @@ func TestPermFewerValsThanSize(t *testing.T) {
 	}
 
 	t.Run("sink", func(t *testing.T) {
-
 		tree := New[any, string]([]string{"1", "0"})
 
 		var res [][]string
@@ -112,18 +113,16 @@ func TestPermFewerValsThanSize(t *testing.T) {
 	})
 
 	t.Run("collector", func(t *testing.T) {
-		ml := c.WithMinLen(c.New[any, string](3))
-
-		tree := New[any, string]([]string{"1", "0"})
+		cl := c.New[any, string](2)
 
 		var res [][]string
-		ml.AddSkipRule(func(ctx *any, acc []string, current string) bool {
-			acc = append(acc, current)
+		sk := c.WithSink(cl, func(acc []string) {
 			res = append(res, acc)
-			return false
 		})
 
-		tree.Perm(ml.Collect)
+		ml := c.WithMinLen(sk, 3)
+
+		New[any, string]([]string{"1", "0"}).Perm(ml.Collect)
 
 		var index int
 		for _, v := range want {
@@ -200,18 +199,16 @@ func TestPerm(t *testing.T) {
 	})
 
 	t.Run("collector", func(t *testing.T) {
-		ml := c.WithMinLen(c.New[any, string](3))
-
-		tree := New[any, string]([]string{"a", "b", "c"})
+		cl := c.New[any, string](3)
 
 		var res [][]string
-		ml.AddSkipRule(func(ctx *any, acc []string, current string) bool {
-			acc = append(acc, current)
+		sk := c.WithSink(cl, func(acc []string) {
 			res = append(res, acc)
-			return false
 		})
 
-		tree.Perm(ml.Collect)
+		ml := c.WithMinLen(sk, 3)
+
+		New[any, string]([]string{"a", "b", "c"}).Perm(ml.Collect)
 
 		if len(res) != len(want) {
 			t.Fatalf("want result size: %d, got %d", len(want), len(res))
