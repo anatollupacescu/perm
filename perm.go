@@ -40,16 +40,19 @@ func (n *node[X, T]) perm(ctx X, collect collector[X, T], acc []T) {
 	}
 }
 
-func perm[X, T any](n *node[X, T], acc []T, sink func([]T), size int) {
-	var done bool
-	if len(acc) == size-1 {
-		done = true
-	}
-	for _, v := range n.refs {
-		if done {
-			sink(append(acc, v.v))
-			continue
+func Perm[T any](sink func([]T) bool, sizeLimit int, in ...T) {
+	var perm func(acc []T, sink func([]T) bool)
+
+	perm = func(acc []T, sink func([]T) bool) {
+		for _, v := range in {
+			if sink(append(acc, v)) {
+				continue
+			}
+			if len(acc) < sizeLimit-1 {
+				perm(append(acc, v), sink)
+			}
 		}
-		perm(v, append(acc, v.v), sink, size)
 	}
+
+	perm(nil, sink)
 }

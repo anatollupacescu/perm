@@ -7,6 +7,17 @@ import (
 	c "github.com/anatollupacescu/perm/collector"
 )
 
+func matchAny[T any](ctx *context, acc []T, rules ...func(ctx *context, acc []T, current T) bool) bool {
+	for _, rule := range rules {
+		tail := acc[len(acc)-1:][0]
+		acc = acc[:len(acc)-1]
+		if rule(ctx, acc, tail) {
+			return true
+		}
+	}
+	return false
+}
+
 func TestFindStepSequence(t *testing.T) {
 	var input []act
 	input = append(input,
@@ -18,64 +29,78 @@ func TestFindStepSequence(t *testing.T) {
 		act{name: "5-to-3", cb: transfer_5_to_3})
 
 	t.Run("one solution with 6 steps", func(t *testing.T) {
-		e := c.New[context, act](6, func(ctx *context) bool {
-			return ctx.jug_5 == 4 // solution: we've got 4 liters in the 5 liter jug
+		cl := c.New[context, act](6)
+
+		var (
+			solutions []act
+			got       int
+		)
+		in := c.WithFn(cl, func(ctx *context, acc []act, a act) bool {
+			if ctx.jug_5 == 4 {
+				nacc := make([]act, len(acc))
+				copy(nacc, acc)
+				solutions = append(nacc, a)
+				got++
+				return true
+			}
+			return false
 		})
 
-		ml := c.WithMinLen(e, 5)
+		ml := c.WithMinLen(in, 5)
 
-		ap := c.WithApply(ml, func(ctx *context, a act) { a.cb(ctx) })
+		ap := c.WithFn(ml, func(ctx *context, _ []act, a act) bool { a.cb(ctx); return false })
 
 		sk := c.WithSkipRules(ap, initialStepIsFillingUp,
 			emptyAnEmptyJug, fillUpAfullJug, transferFromEmpty,
 			transferToFull, repetitions, redundant)
 
 		want := 1
-		e.WantSolutions(want)
 
 		perm.New[context, act](input).Perm(sk.Collect)
 
-		solutions := e.Solutions()
-
-		if len(solutions) != want {
-			t.Fatalf("want %d solutions, got %d", want, len(solutions))
+		if got != want {
+			t.Fatalf("want %d solutions, got %d", want, got)
 		}
 
-		// slices.SortFunc(solutions, func(a, b c.Solution[act]) int {
-		// 	return len(a.Steps) - len(b.Steps)
-		// })
+		steps := 6
+		if len(solutions) != steps {
+			t.Fatalf("want %d steps, got %d", steps, len(solutions))
+		}
 
-		// for _, s := range solutions[0].Steps {
-		// 	t.Log(s.name)
-		// }
+		for _, s := range solutions {
+			t.Log(s.name)
+		}
 	})
 
 	t.Run("six solutions with 8 steps", func(t *testing.T) {
-		e := c.New[context, act](8, func(ctx *context) bool {
-			return ctx.jug_5 == 4 // solution: we've got 4 liters in the 5 liter jug
+		cl := c.New[context, act](8)
+
+		var got int
+		in := c.WithFn(cl, func(ctx *context, acc []act, a act) bool {
+			if ctx.jug_5 == 4 {
+				got++
+				return true
+			}
+			return false
 		})
 
-		ml := c.WithMinLen(e, 6)
+		ml := c.WithMinLen(in, 6)
 
-		ap := c.WithApply(ml, func(ctx *context, a act) { a.cb(ctx) })
+		ap := c.WithFn(ml, func(ctx *context, acc []act, a act) (_ bool) {
+			a.cb(ctx)
+			return
+		})
 
-		sk := c.WithSkipRules(ap, initialStepIsFillingUp, // no point in starting with anything else
+		sk := c.WithSkipRules(ap, initialStepIsFillingUp,
 			emptyAnEmptyJug, fillUpAfullJug, transferFromEmpty,
 			transferToFull, repetitions, redundant)
 
-		e.AddInvariant("match 4 liters", func(ctx *context) bool {
-			return ctx.jug_5 == 4 // solution: we've got 4 liters in the 5 liter jug
-		})
-
 		want := 6
-		e.WantSolutions(want)
 
 		perm.New[context, act](input).Perm(sk.Collect)
 
-		solutions := e.Solutions()
-
-		if len(solutions) != want {
-			t.Fatalf("want %d solutions, got %d", want, len(solutions))
+		if got != want {
+			t.Fatalf("want %d solutions, got %d", want, got)
 		}
 	})
 }

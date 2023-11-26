@@ -1,18 +1,20 @@
 package collector
 
-type Apply[X, T any] struct {
+type Fn[X, T any] struct {
 	collector[X, T]
-	apply func(*X, T)
+	apply func(*X, []T, T) bool
 }
 
-func WithApply[X, T any](c collector[X, T], apply func(*X, T)) *Apply[X, T] {
-	return &Apply[X, T]{
+func WithFn[X, T any](c collector[X, T], apply func(*X, []T, T) bool) *Fn[X, T] {
+	return &Fn[X, T]{
 		collector: c,
 		apply:     apply,
 	}
 }
 
-func (ap *Apply[X, T]) Collect(ctx *X, acc []T, current T) (doSkip, done bool) {
-	ap.apply(ctx, current)
-	return ap.collector.Collect(ctx, acc, current)
+func (fn *Fn[X, T]) Collect(ctx *X, acc []T, current T) (doSkip, done bool) {
+	if fn.apply(ctx, acc, current) {
+		return true, false
+	}
+	return fn.collector.Collect(ctx, acc, current)
 }

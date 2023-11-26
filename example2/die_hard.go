@@ -39,7 +39,7 @@ func transfer_5_to_3(ctx *context) {
 
 // skip rules
 
-func emptyAnEmptyJug(ctx *context, acc []act, current act) bool {
+func emptyAnEmptyJug(ctx *context, current act) bool {
 	if current.name == "empty-3" && ctx.jug_3 == 0 {
 		return true
 	}
@@ -49,7 +49,7 @@ func emptyAnEmptyJug(ctx *context, acc []act, current act) bool {
 	return false
 }
 
-func fillUpAfullJug(ctx *context, acc []act, current act) bool {
+func fillUpAfullJug(ctx *context, current act) bool {
 	if current.name == "fill-up-3" && ctx.jug_3 == 3 {
 		return true
 	}
@@ -59,7 +59,7 @@ func fillUpAfullJug(ctx *context, acc []act, current act) bool {
 	return false
 }
 
-func transferFromEmpty(ctx *context, acc []act, current act) bool {
+func transferFromEmpty(ctx *context, current act) bool {
 	if current.name == "3-to-5" && ctx.jug_3 == 0 {
 		return true
 	}
@@ -69,7 +69,7 @@ func transferFromEmpty(ctx *context, acc []act, current act) bool {
 	return false
 }
 
-func transferToFull(ctx *context, acc []act, current act) bool {
+func transferToFull(ctx *context, current act) bool {
 	if current.name == "3-to-5" && ctx.jug_5 == 5 {
 		return true
 	}
@@ -79,29 +79,28 @@ func transferToFull(ctx *context, acc []act, current act) bool {
 	return false
 }
 
-func initialStepIsFillingUp(_ *context, acc []act, current act) bool {
-	if len(acc) == 0 {
-		acceptable := []string{"fill-up-3", "fill-up-5"}
-		validFirstInput := slices.Contains(acceptable, current.name)
-		return !validFirstInput
-	}
-	return false
-}
+var acceptable = []string{"fill-up-3", "fill-up-5"}
 
-func repetitions(_ *context, acc []act, current act) bool {
-	if len(acc) == 0 {
+func initialStepIsFillingUp(acc []act) bool {
+	if len(acc) != 1 {
 		return false
 	}
-	last := acc[len(acc)-1]
-	return last.name == current.name
+	validFirstInput := slices.Contains(acceptable, current(acc).name)
+	return !validFirstInput
 }
 
-func redundant(_ *context, acc []act, current act) bool {
-	if len(acc) == 0 {
+func repetitions(acc []act) bool {
+	if len(acc) < 2 {
 		return false
 	}
-	last := acc[len(acc)-1]
-	seq := []string{last.name, current.name}
+	return prev(acc).name == current(acc).name
+}
+
+func redundant(acc []act) bool {
+	if len(acc) < 2 {
+		return false
+	}
+	seq := []string{prev(acc).name, current(acc).name}
 	slices.Sort(seq)
 	if slices.Equal(seq, []string{"empty-3", "fill-up-3"}) {
 		return true
@@ -109,5 +108,16 @@ func redundant(_ *context, acc []act, current act) bool {
 	if slices.Equal(seq, []string{"empty-5", "fill-up-5"}) {
 		return true
 	}
+	if slices.Equal(seq, []string{"3-to-5", "5-to-3"}) {
+		return true
+	}
 	return false
+}
+
+func prev(acc []act) act {
+	return acc[len(acc)-2]
+}
+
+func current(acc []act) act {
+	return acc[len(acc)-1]
 }

@@ -25,19 +25,23 @@ func TestSkipRule(t *testing.T) {
 
 func TestPermMoreValsThanSize(t *testing.T) {
 	want := [][]string{
-		{"a", "a"}, {"a", "b"}, {"a", "c"}, {"a", "d"}, {"b", "a"}, {"b", "b"}, {"b", "c"}, {"b", "d"},
-		{"c", "a"}, {"c", "b"}, {"c", "c"}, {"c", "d"}, {"d", "a"}, {"d", "b"}, {"d", "c"}, {"d", "d"},
+		{"a", "a"}, {"a", "b"}, {"a", "c"}, {"a", "d"},
+		{"b", "a"}, {"b", "b"}, {"b", "c"}, {"b", "d"},
+		{"c", "a"}, {"c", "b"}, {"c", "c"}, {"c", "d"},
+		{"d", "a"}, {"d", "b"}, {"d", "c"}, {"d", "d"},
 	}
 
 	t.Run("sink", func(t *testing.T) {
-		tree := New[any, string]([]string{"a", "b", "c", "d"})
-
 		var res [][]string
-		sink := func(in []string) {
+		sink := func(in []string) bool {
+			if len(in) < 2 {
+				return false
+			}
 			res = append(res, in)
+			return false
 		}
 
-		perm(tree, nil, sink, 2)
+		Perm(sink, 2, "a", "b", "c", "d")
 
 		if len(res) != len(want) {
 			t.Fatalf("want result size: %d, got %d", len(want), len(res))
@@ -89,14 +93,16 @@ func TestPermFewerValsThanSize(t *testing.T) {
 	}
 
 	t.Run("sink", func(t *testing.T) {
-		tree := New[any, string]([]string{"1", "0"})
-
 		var res [][]string
-		sink := func(in []string) {
+		sink := func(in []string) bool {
+			if len(in) < 3 {
+				return false
+			}
 			res = append(res, in)
+			return false
 		}
 
-		perm(tree, nil, sink, 3)
+		Perm(sink, 3, "1", "0")
 
 		if len(res) != len(want) {
 			t.Fatalf("want result size: %d, got %d", len(want), len(res))
@@ -175,14 +181,16 @@ func TestPerm(t *testing.T) {
 	}
 
 	t.Run("sinc", func(t *testing.T) {
-		tree := New[any, string]([]string{"a", "b", "c"})
-
 		var res [][]string
-		sink := func(in []string) {
+		sink := func(in []string) bool {
+			if len(in) < 3 {
+				return false
+			}
 			res = append(res, in)
+			return false
 		}
 
-		perm(tree, nil, sink, 3)
+		Perm(sink, 3, "a", "b", "c")
 
 		if len(res) != len(want) {
 			t.Fatalf("want result size: %d, got %d", len(want), len(res))
