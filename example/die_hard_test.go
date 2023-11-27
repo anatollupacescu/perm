@@ -1,8 +1,6 @@
 package diehard
 
-import (
-	"testing"
-)
+import "testing"
 
 func TestTransfer3To5(t *testing.T) {
 	testCases := []struct {

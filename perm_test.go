@@ -5,24 +5,7 @@ import (
 	"testing"
 
 	"github.com/anatollupacescu/perm"
-	c "github.com/anatollupacescu/perm/collector"
 )
-
-func TestSkipRule(t *testing.T) {
-	cl := c.New[any, string](2)
-
-	sk := c.WithSink(cl, func(acc []string) {
-		// t.Log(acc)
-	})
-
-	ml := c.WithMinLen(sk, 2)
-
-	sr := c.WithSkipRules(ml, func(ctx *any, acc []string, current string) bool {
-		return len(acc) == 1 && current == "y"
-	})
-
-	perm.New[any, string]([]string{"x", "y", "z"}).Perm(sr.Collect)
-}
 
 func TestPermMoreValsThanSize(t *testing.T) {
 	want := [][]string{
@@ -36,11 +19,13 @@ func TestPermMoreValsThanSize(t *testing.T) {
 		const two = 2
 
 		var res [][]string
-		c := perm.Collect(func(s []string) {
+		sink := perm.Collect(func(s []string) {
+			// could make a copy but because of min len
+			// no further appends will happen on this memory location
 			res = append(res, s)
 		})
 
-		ml := perm.MinLen(two, c)
+		ml := perm.MinLen(two, sink)
 
 		perm.Of(two, ml, "a", "b", "c", "d")
 
@@ -58,44 +43,42 @@ func TestPermMoreValsThanSize(t *testing.T) {
 		}
 	})
 
-	t.Run("collector", func(t *testing.T) {
-		cl := c.New[any, string](2)
-
-		var res [][]string
-		sk := c.WithSink(cl, func(acc []string) {
-			res = append(res, acc)
-		})
-
-		ml := c.WithMinLen(sk, 2)
-
-		perm.New[any, string]([]string{"a", "b", "c", "d"}).Perm(ml.Collect)
-
-		var index int
-		for _, v := range want {
-			c := res[index]
-			index++
-			if !slices.Equal(c, v) {
-				t.Fatalf("\nwant: %v\ngot:  %v", v, c)
-			}
-		}
-	})
-
-	type context struct{}
+	type context struct {
+		allSameCount bool
+	}
 
 	t.Run("perm ctx", func(t *testing.T) {
-		var index int
-		sink := perm.CollectCtx[context](func(_ *context, got []string) {
+		var total, index int
+		sink := perm.CollectCtx[context](func(ctx *context, got []string) {
 			if !slices.Equal(got, want[index]) {
 				t.Fatalf("\nwant: %v\ngot:  %v", want, got)
 			}
 			index++
+			if ctx.allSameCount {
+				total++
+			}
 		})
 
 		const two = 2
 
+		sink = perm.FilterCtx(sink, func(ctx *context, acc []string, current string) bool {
+			nacc := make([]string, len(acc))
+			copy(nacc, acc)
+			c := slices.Compact(nacc)
+			if len(c) == 1 && c[0] == current {
+				ctx.allSameCount = true
+			}
+			return false
+		})
+
 		sink = perm.MinLenCtx(two, sink)
 
 		perm.OfCtx(two, sink, "a", "b", "c", "d")
+
+		want := 4 // same on the diagonal
+		if total != want {
+			t.Fatalf("\nwant: %v\ngot:  %v", want, total)
+		}
 	})
 }
 
@@ -115,39 +98,17 @@ func TestPermFewerValsThanSize(t *testing.T) {
 		const size = 3
 
 		var res [][]string
-		c := perm.Collect(func(s []string) {
+		sink := perm.Collect(func(s []string) {
 			res = append(res, s)
 		})
 
-		ml := perm.MinLen(size, c)
+		ml := perm.MinLen(size, sink)
 
 		perm.Of(size, ml, "1", "0")
 
 		if len(res) != len(want) {
 			t.Fatalf("want result size: %d, got %d", len(want), len(res))
 		}
-
-		var index int
-		for _, v := range want {
-			c := res[index]
-			index++
-			if !slices.Equal(c, v) {
-				t.Fatalf("\nwant: %v\ngot:  %v", v, c)
-			}
-		}
-	})
-
-	t.Run("collector", func(t *testing.T) {
-		cl := c.New[any, string](2)
-
-		var res [][]string
-		sk := c.WithSink(cl, func(acc []string) {
-			res = append(res, acc)
-		})
-
-		ml := c.WithMinLen(sk, 3)
-
-		perm.New[any, string]([]string{"1", "0"}).Perm(ml.Collect)
 
 		var index int
 		for _, v := range want {
@@ -200,32 +161,6 @@ func TestPerm(t *testing.T) {
 		ml := perm.MinLen(size, c)
 
 		perm.Of(size, ml, "a", "b", "c")
-
-		if len(res) != len(want) {
-			t.Fatalf("want result size: %d, got %d", len(want), len(res))
-		}
-
-		var index int
-		for _, v := range want {
-			c := res[index]
-			index++
-			if !slices.Equal(c, v) {
-				t.Fatalf("\nwant: %v\ngot:  %v", v, c)
-			}
-		}
-	})
-
-	t.Run("collector", func(t *testing.T) {
-		cl := c.New[any, string](3)
-
-		var res [][]string
-		sk := c.WithSink(cl, func(acc []string) {
-			res = append(res, acc)
-		})
-
-		ml := c.WithMinLen(sk, 3)
-
-		perm.New[any, string]([]string{"a", "b", "c"}).Perm(ml.Collect)
 
 		if len(res) != len(want) {
 			t.Fatalf("want result size: %d, got %d", len(want), len(res))
