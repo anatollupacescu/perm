@@ -84,21 +84,19 @@ func TestPermExpensiveCtx(t *testing.T) {
 	})
 }
 
+func build(acc []act, current act) *context {
+	var ctx = new(context)
+	for _, a := range acc {
+		a.Mutate(ctx)
+	}
+	return ctx
+}
+
 func TestPermCheapContext(t *testing.T) {
 	var solutions [][]act
 
 	sink := func(acc []act, current act) bool {
-
-		var ctx = new(context)
-
-		for _, a := range acc {
-			a.Mutate(ctx)
-		}
-
-		if skipRulesCtx.Match(ctx, acc, current) {
-			return true
-		}
-
+		var ctx = build(acc, current)
 		current.Mutate(ctx)
 
 		// invariant
@@ -113,6 +111,12 @@ func TestPermCheapContext(t *testing.T) {
 
 		return false
 	}
+
+	// filter out actions irrelevant for the current context
+	sink = perm.Filter(sink, func(acc []act, current act) bool {
+		var ctx = build(acc, current)
+		return skipRulesCtx.Match(ctx, nil, current)
+	})
 
 	skipRules := perm.RuleSet[act]([]func([]act, act) bool{repetitions, redundant})
 	sink = perm.Filter(sink, skipRules.Match)
@@ -157,7 +161,7 @@ func TestPermCheapContext(t *testing.T) {
 }
 
 func print(t *testing.T, solutions [][]act) {
-	var doPrint bool = true
+	var doPrint bool //= true
 	if doPrint {
 		for _, v := range solutions {
 			t.Log("len", len(v))
