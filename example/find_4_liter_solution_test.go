@@ -7,17 +7,6 @@ import (
 	c "github.com/anatollupacescu/perm/collector"
 )
 
-func matchAny[T any](ctx *context, acc []T, rules ...func(ctx *context, acc []T, current T) bool) bool {
-	for _, rule := range rules {
-		tail := acc[len(acc)-1:][0]
-		acc = acc[:len(acc)-1]
-		if rule(ctx, acc, tail) {
-			return true
-		}
-	}
-	return false
-}
-
 func TestFindStepSequence(t *testing.T) {
 	var input []act
 	input = append(input,
