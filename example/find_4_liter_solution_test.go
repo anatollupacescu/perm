@@ -84,9 +84,12 @@ func TestPermExpensiveCtx(t *testing.T) {
 	})
 }
 
-func build(acc []act, current act) *context {
+func build(acc []act, extra ...act) *context {
 	var ctx = new(context)
 	for _, a := range acc {
+		a.Mutate(ctx)
+	}
+	for _, a := range extra {
 		a.Mutate(ctx)
 	}
 	return ctx
@@ -96,7 +99,7 @@ func TestPermCheapContext(t *testing.T) {
 	var solutions [][]act
 
 	sink := func(acc []act, current act) bool {
-		var ctx = build(acc, current)
+		var ctx = build(acc)
 		current.Mutate(ctx)
 
 		// invariant
@@ -114,7 +117,7 @@ func TestPermCheapContext(t *testing.T) {
 
 	// filter out actions irrelevant for the current context
 	sink = perm.Filter(sink, func(acc []act, current act) bool {
-		var ctx = build(acc, current)
+		var ctx = build(acc)
 		return skipRulesCtx.Match(ctx, nil, current)
 	})
 
