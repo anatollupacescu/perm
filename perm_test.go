@@ -150,7 +150,7 @@ func TestPerm(t *testing.T) {
 		{"c", "c", "a"}, {"c", "c", "b"}, {"c", "c", "c"},
 	}
 
-	t.Run("sinc", func(t *testing.T) {
+	t.Run("sink", func(t *testing.T) {
 		const size = 3
 
 		var res [][]string
@@ -205,18 +205,18 @@ func TestMutateCtx(t *testing.T) {
 
 	t.Run("sum filter", func(t *testing.T) {
 		var total int
-		sink := perm.CollectCtx[context](func(ctx *context, got []int) {
+		sum := perm.CollectCtx[context](func(ctx *context, got []int) {
 			total += ctx.count
 		})
 
-		sink = perm.FilterCtx(sink, func(ctx *context, acc []int, current int) bool {
+		filter := perm.FilterCtx(sum, func(ctx *context, acc []int, current int) bool {
 			ctx.count += current
 			return false
 		})
 
 		const three = 3
 
-		sink = perm.MinLenCtx(three, sink)
+		sink := perm.MinLenCtx(three, filter)
 
 		perm.OfCtx(three, sink, 1, 0)
 
