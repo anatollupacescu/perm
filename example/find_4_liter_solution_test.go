@@ -95,12 +95,12 @@ func build(acc []act, extra ...act) *context {
 	return ctx
 }
 
-func TestPermCheapContext(t *testing.T) {
+func TestPermCheapCtx(t *testing.T) {
 	var solutions [][]act
 
 	sink := func(acc []act, current act) bool {
-		var ctx = build(acc)
-		current.Mutate(ctx)
+		// we build the entire current context from scratch
+		var ctx = build(acc, current)
 
 		// invariant
 		if ctx.jug_5 == 4 {
@@ -166,11 +166,12 @@ func TestPermCheapContext(t *testing.T) {
 func print(t *testing.T, solutions [][]act) {
 	var doPrint bool //= true
 	if doPrint {
-		for _, v := range solutions {
-			t.Log("len", len(v))
+		for i, v := range solutions {
+			t.Logf("%d) solution length=%d", i+1, len(v))
 			for _, s := range v {
 				t.Log(s.name)
 			}
+			t.Log()
 		}
 	}
 }

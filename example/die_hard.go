@@ -34,7 +34,6 @@ func transfer_5_to_3(ctx *context) {
 }
 
 // skip rules
-
 func emptyAnEmptyJug(ctx *context, _ []act, current act) bool {
 	if current.name == "empty-3" && ctx.jug_3 == 0 {
 		return true
