@@ -7,6 +7,16 @@ import (
 	"github.com/anatollupacescu/perm"
 )
 
+func TestPermOfSize(t *testing.T) {
+	sink := func(s []string) {
+		if len(s) != 4 {
+			t.Fatal("wrong size")
+		}
+	}
+
+	perm.OfSize(4, sink, "a", "b", "c", "d")
+}
+
 func TestPermMoreValsThanSize(t *testing.T) {
 	want := [][]string{
 		{"a", "a"}, {"a", "b"}, {"a", "c"}, {"a", "d"},
@@ -64,8 +74,9 @@ func TestPermMoreValsThanSize(t *testing.T) {
 		sink = perm.FilterCtx(sink, func(ctx *context, acc []string, current string) bool {
 			nacc := make([]string, len(acc))
 			copy(nacc, acc)
+			nacc = append(nacc, current)
 			c := slices.Compact(nacc)
-			if len(c) == 1 && c[0] == current {
+			if len(c) == 1 {
 				ctx.allSameCount = true
 			}
 			return false
