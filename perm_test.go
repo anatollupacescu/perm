@@ -133,7 +133,7 @@ func TestPermFewerValsThanSize(t *testing.T) {
 
 	t.Run("perm ctx", func(t *testing.T) {
 		var index int
-		sink := perm.CollectCtx[any](func(_ *any, got []string) {
+		sink := perm.CollectCtx(func(_ *any, got []string) {
 			if !slices.Equal(got, want[index]) {
 				t.Fatalf("\nwant: %v\ngot:  %v", want, got)
 			}
@@ -195,7 +195,7 @@ func TestMutateCtx(t *testing.T) {
 
 	t.Run("sum", func(t *testing.T) {
 		var total int
-		sink := perm.CollectCtx[context](func(ctx *context, got []int) {
+		sink := perm.CollectCtx(func(ctx *context, got []int) {
 			total += ctx.count
 		})
 
@@ -216,7 +216,7 @@ func TestMutateCtx(t *testing.T) {
 
 	t.Run("sum filter", func(t *testing.T) {
 		var total int
-		sum := perm.CollectCtx[context](func(ctx *context, got []int) {
+		sum := perm.CollectCtx(func(ctx *context, got []int) {
 			total += ctx.count
 		})
 

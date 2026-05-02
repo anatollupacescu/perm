@@ -17,6 +17,26 @@ func OfSize[T any](size int, sink func([]T), in ...T) {
 	perm(nil, sink)
 }
 
+// fixed size, no progression
+func OfSizeWithSkip[T any](size int, skip func([]T, T) bool, sink func([]T), in ...T) {
+	size--
+	var perm func(acc []T, sink func([]T))
+	perm = func(acc []T, sink func([]T)) {
+		for _, v := range in {
+			if skip(acc, v) {
+				continue
+			}
+			if len(acc) < size {
+				perm(append(acc, v), sink)
+				continue
+			}
+			sink(append(acc, v))
+		}
+	}
+
+	perm(nil, sink)
+}
+
 func Of[T any](maxSize int, sink func([]T, T) bool, in ...T) {
 	var perm func(acc []T, sink func([]T, T) bool)
 

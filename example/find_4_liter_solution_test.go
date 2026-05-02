@@ -144,7 +144,7 @@ func TestPermCheapCtx(t *testing.T) {
 		print(t, solutions)
 	})
 
-	t.Run("one solutions with 6 steps up to size 7", func(t *testing.T) {
+	t.Run("one solution with 6 steps up to size 7", func(t *testing.T) {
 		solutions = nil
 		perm.Of(7, sink, input...)
 		if want, got := 1, len(solutions); got != want {

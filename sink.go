@@ -9,6 +9,14 @@ func MinLen[T any](size int, delegate func(in []T, c T) bool) func(in []T, c T) 
 	}
 }
 
+func CollectSize[T any](sink func([]T)) func(in []T) {
+	return func(in []T) {
+		nacc := make([]T, 0, len(in)+1)
+		nacc = append(nacc, in...)
+		sink(nacc)
+	}
+}
+
 func Collect[T any](sink func([]T)) func(in []T, c T) bool {
 	return func(in []T, c T) bool {
 		nacc := make([]T, 0, len(in)+1)
