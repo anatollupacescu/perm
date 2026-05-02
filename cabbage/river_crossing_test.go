@@ -1,7 +1,6 @@
 package river
 
 import (
-	"fmt"
 	"slices"
 	"strings"
 	"testing"
@@ -30,7 +29,7 @@ func TestFindBoatConfiguration(t *testing.T) {
 		{name: "farmer-back", Mutate: func(ctx *context) { ctx.Farmer = false }},
 	}
 
-	var res [][]string
+	var solutions [][]string
 
 	var totalChecked, foundPos int
 	sink := perm.CollectSize(func(acc []act) {
@@ -42,19 +41,6 @@ func TestFindBoatConfiguration(t *testing.T) {
 			a.Mutate(&ctx)
 		}
 
-		if ctx.Wolf && ctx.Goat && !ctx.Farmer {
-			return
-		}
-		if ctx.Cabbage && ctx.Goat && !ctx.Farmer {
-			return
-		}
-		if !ctx.Wolf && !ctx.Goat && ctx.Farmer {
-			return
-		}
-		if !ctx.Cabbage && !ctx.Goat && ctx.Farmer {
-			return
-		}
-
 		if ctx.Cabbage && ctx.Wolf && ctx.Goat && ctx.Farmer {
 			foundPos = totalChecked
 
@@ -63,15 +49,19 @@ func TestFindBoatConfiguration(t *testing.T) {
 				names = append(names, act.name)
 			}
 
-			res = append(res, names)
+			solutions = append(solutions, names)
 		}
 	})
 
 	perm.OfSizeWithSkip(7, skip, sink, input...)
 
+	if len(solutions) != 2 {
+		t.Fatalf("wanted two solution, got %d", len(solutions))
+	}
+
 	t.Logf("got solution at %d/%d", foundPos, totalChecked)
 
-	for _, r := range res {
+	for _, r := range solutions {
 		t.Log(r)
 	}
 }
@@ -114,13 +104,6 @@ func skip(acc []act, current act) bool {
 	for _, a := range acc {
 		a.Mutate(&ctx)
 	}
-
-	if atState(acc, current, []string{"goat-across", "wolf-across"}) {
-		fmt.Println()
-	}
-	// if atState(acc, []string{"cabbage-across"}) {
-	// 	fmt.Println()
-	// }
 
 	if ctx.Wolf && current.name == "wolf-across" {
 		return true
