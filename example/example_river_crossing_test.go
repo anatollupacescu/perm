@@ -1,41 +1,82 @@
-package river
+package example
 
 import (
-	"slices"
 	"strings"
 	"testing"
 
 	"github.com/anatollupacescu/perm"
 )
 
-type context struct {
+type riverCtx struct {
 	Farmer, Wolf, Goat, Cabbage bool // true=crossed
 }
 
-type act struct {
+type riverAct struct {
 	name   string
-	Mutate func(*context)
+	mutate func(*riverCtx)
 }
 
-func TestFindBoatConfiguration(t *testing.T) {
-	var input = []act{
-		{name: "wolf-across", Mutate: func(ctx *context) { ctx.Wolf = true; ctx.Farmer = true }},
-		{name: "wolf-back", Mutate: func(ctx *context) { ctx.Wolf = false; ctx.Farmer = false }},
-		{name: "goat-across", Mutate: func(ctx *context) { ctx.Goat = true; ctx.Farmer = true }},
-		{name: "goat-back", Mutate: func(ctx *context) { ctx.Goat = false; ctx.Farmer = false }},
-		{name: "cabbage-across", Mutate: func(ctx *context) { ctx.Cabbage = true; ctx.Farmer = true }},
-		{name: "cabbage-back", Mutate: func(ctx *context) { ctx.Cabbage = false; ctx.Farmer = false }},
-		{name: "farmer-across", Mutate: func(ctx *context) { ctx.Farmer = true }},
-		{name: "farmer-back", Mutate: func(ctx *context) { ctx.Farmer = false }},
+func (r riverAct) Mutate(ctx *riverCtx) {
+	r.mutate(ctx)
+}
+
+var riverActions = []riverAct{
+	{name: "wolf-across", mutate: func(ctx *riverCtx) { ctx.Wolf = true; ctx.Farmer = true }},
+	{name: "wolf-back", mutate: func(ctx *riverCtx) { ctx.Wolf = false; ctx.Farmer = false }},
+	{name: "goat-across", mutate: func(ctx *riverCtx) { ctx.Goat = true; ctx.Farmer = true }},
+	{name: "goat-back", mutate: func(ctx *riverCtx) { ctx.Goat = false; ctx.Farmer = false }},
+	{name: "cabbage-across", mutate: func(ctx *riverCtx) { ctx.Cabbage = true; ctx.Farmer = true }},
+	{name: "cabbage-back", mutate: func(ctx *riverCtx) { ctx.Cabbage = false; ctx.Farmer = false }},
+	{name: "farmer-across", mutate: func(ctx *riverCtx) { ctx.Farmer = true }},
+	{name: "farmer-back", mutate: func(ctx *riverCtx) { ctx.Farmer = false }},
+}
+
+func TestRiverCrossingCtx(t *testing.T) {
+	var (
+		count     int
+		solutions [][]string
+	)
+
+	sink := perm.CollectCtx(func(ctx *riverCtx, acc []riverAct) {
+		count++
+		if ctx.Cabbage && ctx.Wolf && ctx.Goat && ctx.Farmer {
+			var names []string
+			for _, act := range acc {
+				names = append(names, act.name)
+			}
+
+			solutions = append(solutions, names)
+		}
+	})
+
+	mutate := perm.MutateCtx(sink)
+
+	minLen := perm.MinLenCtx(6, mutate)
+
+	filters := perm.FilterCtx(minLen, skipRiverCtx)
+
+	perm.OfCtx(7, filters, riverActions...)
+
+	t.Log(count)
+
+	if len(solutions) != 2 {
+		t.Fatal("wanted 2 solutions, got", len(solutions))
 	}
+}
+
+func skipRiverCtx(_ *riverCtx, acc []riverAct, tail riverAct) bool {
+	return skipRiver(acc, tail)
+}
+
+func TestRiverCrossing(t *testing.T) {
 
 	var solutions [][]string
 
 	var totalChecked, foundPos int
-	sink := perm.CollectSize(func(acc []act) {
+	sink := perm.Collect(func(acc []riverAct) {
 		totalChecked++
 
-		var ctx context
+		var ctx riverCtx
 
 		for _, a := range acc {
 			a.Mutate(&ctx)
@@ -53,7 +94,17 @@ func TestFindBoatConfiguration(t *testing.T) {
 		}
 	})
 
-	perm.OfSizeWithSkip(7, skip, sink, input...)
+	filter := func(in []riverAct, c riverAct) bool {
+		if skipRiver(in, c) {
+			return true
+		}
+
+		sink(in, c)
+
+		return false
+	}
+
+	perm.Of(7, filter, riverActions...)
 
 	if len(solutions) != 2 {
 		t.Fatalf("wanted two solution, got %d", len(solutions))
@@ -66,7 +117,7 @@ func TestFindBoatConfiguration(t *testing.T) {
 	}
 }
 
-func skip(acc []act, current act) bool {
+func skipRiver(acc []riverAct, current riverAct) bool {
 
 	// very first step
 	if len(acc) == 0 {
@@ -74,7 +125,7 @@ func skip(acc []act, current act) bool {
 			return true
 		}
 
-		var ctx context
+		var ctx riverCtx
 		current.Mutate(&ctx)
 
 		if ctx.Wolf && ctx.Goat && !ctx.Farmer {
@@ -99,7 +150,7 @@ func skip(acc []act, current act) bool {
 		}
 	}
 
-	var ctx context
+	var ctx riverCtx
 
 	for _, a := range acc {
 		a.Mutate(&ctx)
@@ -153,60 +204,4 @@ func skip(acc []act, current act) bool {
 	}
 
 	return false
-}
-
-func atState(acc []act, current act, s []string) bool {
-	var aa []string
-	for _, a := range acc {
-		aa = append(aa, a.name)
-	}
-
-	aa = append(aa, current.name)
-
-	eq := slices.Equal(aa, s)
-
-	return eq
-}
-
-func TestAtState(t *testing.T) {
-
-	t.Run("left", func(t *testing.T) {
-		acc := []act{}
-		b := atState(acc, act{name: "goat-across"}, []string{"goat-accross"})
-		if b == true {
-			t.Fail()
-		}
-	})
-
-	t.Run("right", func(t *testing.T) {
-		acc := []act{{name: "goat-across"}}
-		b := atState(acc, act{name: "goat-across"}, []string{})
-		if b == true {
-			t.Fail()
-		}
-	})
-
-	t.Run("match 1", func(t *testing.T) {
-		acc := []act{{name: "goat-across"}}
-		b := atState(acc, act{name: "wolf-across"}, []string{"goat-across", "wolf-across", "random"})
-		if b == false {
-			t.Fail()
-		}
-	})
-
-	t.Run("match 2", func(t *testing.T) {
-		acc := []act{
-			{name: "goat-across"},
-			{name: "farmer-back"},
-			{name: "wolf-across"},
-			{name: "goat-back"},
-			{name: "cabbage-across"},
-			{name: "farmer-back"},
-			// {name: "goat-across"},
-		}
-		b := atState(acc, act{name: "goat-across"}, []string{"goat-across", "farmer-back", "wolf-across", "goat-back", "cabbage-across", "farmer-back", "goat-across"})
-		if b == false {
-			t.Fail()
-		}
-	})
 }

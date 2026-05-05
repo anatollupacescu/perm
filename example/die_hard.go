@@ -1,4 +1,4 @@
-package diehard
+package example
 
 import "slices"
 

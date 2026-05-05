@@ -7,14 +7,16 @@ import (
 	"github.com/anatollupacescu/perm"
 )
 
-func TestPermOfSize(t *testing.T) {
-	sink := func(s []string) {
-		if len(s) != 4 {
-			t.Fatal("wrong size")
-		}
-	}
+func TestPermOf(t *testing.T) {
+	t.Run("respects max size", func(t *testing.T) {
+		sink := perm.CollectF(func(s []string) {
+			if len(s) > 4 {
+				t.Fatal("wrong size", len(s))
+			}
+		})
 
-	perm.OfSize(4, sink, "a", "b", "c", "d")
+		perm.Of(4, sink, "a", "b", "c", "d")
+	})
 }
 
 func TestPermMoreValsThanSize(t *testing.T) {
@@ -29,9 +31,7 @@ func TestPermMoreValsThanSize(t *testing.T) {
 		const two = 2
 
 		var res [][]string
-		sink := perm.Collect(func(s []string) {
-			// could make a copy but because of min len
-			// no further appends will happen on this memory location
+		sink := perm.CollectF(func(s []string) {
 			res = append(res, s)
 		})
 
@@ -109,7 +109,7 @@ func TestPermFewerValsThanSize(t *testing.T) {
 		const size = 3
 
 		var res [][]string
-		sink := perm.Collect(func(s []string) {
+		sink := perm.CollectF(func(s []string) {
 			res = append(res, s)
 		})
 
@@ -148,7 +148,7 @@ func TestPermFewerValsThanSize(t *testing.T) {
 	})
 }
 
-func TestPerm(t *testing.T) {
+func TestSink(t *testing.T) {
 	want := [][]string{
 		{"a", "a", "a"}, {"a", "a", "b"}, {"a", "a", "c"},
 		{"a", "b", "a"}, {"a", "b", "b"}, {"a", "b", "c"},
@@ -161,31 +161,29 @@ func TestPerm(t *testing.T) {
 		{"c", "c", "a"}, {"c", "c", "b"}, {"c", "c", "c"},
 	}
 
-	t.Run("sink", func(t *testing.T) {
-		const size = 3
+	const size = 3
 
-		var res [][]string
-		c := perm.Collect(func(s []string) {
-			res = append(res, s)
-		})
-
-		ml := perm.MinLen(size, c)
-
-		perm.Of(size, ml, "a", "b", "c")
-
-		if len(res) != len(want) {
-			t.Fatalf("want result size: %d, got %d", len(want), len(res))
-		}
-
-		var index int
-		for _, v := range want {
-			c := res[index]
-			index++
-			if !slices.Equal(c, v) {
-				t.Fatalf("\nwant: %v\ngot:  %v", v, c)
-			}
-		}
+	var res [][]string
+	c := perm.CollectF(func(s []string) {
+		res = append(res, s)
 	})
+
+	ml := perm.MinLen(size, c)
+
+	perm.Of(size, ml, "a", "b", "c")
+
+	if len(res) != len(want) {
+		t.Fatalf("want result size: %d, got %d", len(want), len(res))
+	}
+
+	var index int
+	for _, v := range want {
+		c := res[index]
+		index++
+		if !slices.Equal(c, v) {
+			t.Fatalf("\nwant: %v\ngot:  %v", v, c)
+		}
+	}
 }
 
 func TestMutateCtx(t *testing.T) {
