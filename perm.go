@@ -1,5 +1,7 @@
 package perm
 
+import "iter"
+
 func Of[T any](maxSize int, sink func([]T, T) bool, in ...T) {
 	var perm func(acc []T, sink func([]T, T) bool)
 
@@ -37,4 +39,39 @@ func OfCtx[X, T any](maxSize int, sink func(*X, []T, T) bool, in ...T) {
 	}
 
 	perm(ctx, nil)
+}
+
+func CombOf[T any](minSize, maxSize int, in ...T) iter.Seq[[]T] {
+	if len(in) > 64 {
+		in = in[:64]
+	}
+	if minSize < 0 {
+		minSize = 0
+	}
+	if maxSize > 64 {
+		maxSize = 64
+	}
+	if maxSize > len(in) {
+		maxSize = len(in)
+	}
+
+	n := len(in)
+	total := uint64(1) << n // safe because n <= 64
+
+	return func(yield func([]T) bool) {
+		for w := range total {
+			var picked []T
+			for i := range n {
+				if w&(1<<i) != 0 {
+					picked = append(picked, in[i])
+				}
+			}
+
+			if len(picked) >= minSize && len(picked) <= maxSize {
+				if !yield(picked) {
+					return
+				}
+			}
+		}
+	}
 }
