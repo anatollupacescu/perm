@@ -7,6 +7,29 @@ import (
 	"github.com/anatollupacescu/perm"
 )
 
+func TestCombOf(t *testing.T) {
+	var expected = [][]string{
+		{"one"},
+		{"two"},
+		{"one", "two"},
+		{"three"},
+		{"one", "three"},
+		{"two", "three"},
+		{"one", "two", "three"},
+	}
+	var index int
+	for c := range perm.CombOf(1, 3, "one", "two", "three") {
+		if !slices.Equal(c, expected[index]) {
+			t.Fatalf("want %v, got %v; at index %d", expected[index], c, index)
+		}
+		index++
+	}
+
+	if index != len(expected) {
+		t.Fatalf("expected %d results, got %d", len(expected), index)
+	}
+}
+
 func TestPermOf(t *testing.T) {
 	t.Run("respects max size", func(t *testing.T) {
 		sink := perm.CollectF(func(s []string) {

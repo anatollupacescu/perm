@@ -1,6 +1,9 @@
 package perm
 
-import "iter"
+import (
+	"iter"
+	"math/bits"
+)
 
 func Of[T any](maxSize int, sink func([]T, T) bool, in ...T) {
 	var perm func(acc []T, sink func([]T, T) bool)
@@ -60,17 +63,22 @@ func CombOf[T any](minSize, maxSize int, in ...T) iter.Seq[[]T] {
 
 	return func(yield func([]T) bool) {
 		for w := range total {
-			var picked []T
+			// Count set bits to determine combination size upfront
+			size := bits.OnesCount64(w)
+
+			if size < minSize || size > maxSize {
+				continue
+			}
+
+			picked := make([]T, 0, size)
 			for i := range n {
 				if w&(1<<i) != 0 {
 					picked = append(picked, in[i])
 				}
 			}
 
-			if len(picked) >= minSize && len(picked) <= maxSize {
-				if !yield(picked) {
-					return
-				}
+			if !yield(picked) {
+				return
 			}
 		}
 	}
